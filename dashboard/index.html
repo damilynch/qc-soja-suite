@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QC Service Manager — Streams of Joy International</title>
+<style>
+  :root {
+    --blue: #4F6EF7; --purple: #9B4FF7; --grad: linear-gradient(135deg, var(--blue), var(--purple));
+    --ink: #1E2233; --muted: #6B7280; --line: rgba(148, 130, 255, 0.22); --card: rgba(255, 255, 255, 0.72);
+    --success-bg: #D1FAE5; --success-text: #047857; --danger-bg: #FEE2E2; --danger-text: #B91C1C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: -apple-system, 'Inter', 'Segoe UI', sans-serif; color: var(--ink);
+    background: radial-gradient(circle at 15% 10%, rgba(79,110,247,0.14), transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(155,79,247,0.14), transparent 45%),
+      linear-gradient(160deg, #F6F5FF 0%, #FFFFFF 45%, #F3F0FF 100%);
+    padding: 40px 16px 80px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .backlink { display:inline-block; margin-bottom:14px; color:var(--muted); font-size:13px; text-decoration:none; font-weight:600; }
+  .hero { text-align: center; margin-bottom: 28px; }
+  .crest { width: 84px; height: 84px; border-radius: 22px; margin: 0 auto 18px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 30px rgba(120,90,255,0.25); }
+  .crest svg { width: 46px; height: 46px; }
+  h1 { font-size: 32px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.5px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
+  .brand { color: #A6A0C4; font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+  .card { background: var(--card); backdrop-filter: blur(10px); border: 1.5px solid var(--line); border-radius: 20px; padding: 30px 26px; box-shadow: 0 10px 40px rgba(120,90,255,0.10); }
+  .lock-icon { width: 56px; height: 56px; border-radius: 16px; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 18px; }
+  .card-title { font-size: 19px; font-weight: 800; margin: 0 0 6px; text-align: center; }
+  .card-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 20px; text-align: center; }
+  label { display: block; font-size: 12.5px; font-weight: 700; color: #3A3F55; margin: 14px 0 6px; }
+  input[type=text], input[type=password], input[type=date], select {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E4E1F5; background: #fff; font-size: 14.5px; color: var(--ink); font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(155,79,247,0.15); }
+  .row2 { display: flex; gap: 14px; }
+  .row2 > div { flex: 1; }
+  button.submit { width: 100%; padding: 14px; margin-top: 22px; border: none; border-radius: 14px; background: var(--grad); color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(120,90,255,0.30); }
+  button.secondary { width: 100%; padding: 14px; margin-top: 12px; border: 1.5px solid var(--purple); border-radius: 14px; background: #fff; color: var(--purple); font-size: 15px; font-weight: 800; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { margin-top: 16px; padding: 13px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; display: none; }
+  .msg.ok { display: block; background: var(--success-bg); color: var(--success-text); }
+  .msg.err { display: block; background: var(--danger-bg); color: var(--danger-text); }
+  .caveat { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 16px; line-height: 1.5; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--purple); margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .stat { background: #fff; border: 1.5px solid #ECE9FA; border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #ECE9FA; }
+  th { color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
+  .badge.ontime { background: var(--success-bg); color: var(--success-text); }
+  .badge.off { background: #FEF3C7; color: #92400E; }
+  .note-block { background: #fff; border: 1.5px solid #ECE9FA; border-radius: 12px; padding: 12px 14px; margin-top: 8px; font-size: 13px; line-height: 1.5; }
+  .note-title { font-weight: 700; font-size: 12.5px; color: #3A3F55; margin-bottom: 4px; }
+  .link-box { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E4E1F5; background: #fff; font-size: 12.5px; margin-top: 10px; cursor: pointer; }
+  .loading { text-align: center; color: var(--muted); padding: 20px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="backlink" href="/">← All QC Tools</a>
+    <div class="hero">
+      <div class="crest"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="url(#g)"/><defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#4F6EF7"/><stop offset="1" stop-color="#9B4FF7"/></linearGradient></defs></svg></div>
+      <h1>Service Manager</h1>
+      <p class="tagline">Compiled dashboard and draft report, for QC leadership only.</p>
+      <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
+    </div>
+
+    <div class="card" id="lockCard">
+      <div class="lock-icon">🔒</div>
+      <div class="card-title">Enter Password</div>
+      <p class="card-sub">This area is restricted to Service Managers and QC leadership.</p>
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••">
+      <div class="msg" id="lockMsg"></div>
+      <button class="submit" id="unlockBtn">Unlock</button>
+      <p class="caveat">This password is checked on the server before any data loads — it isn't just a hidden button. Still, treat it as a light gate, not a vault: don't reuse a sensitive personal password here.</p>
+    </div>
+
+    <div class="card" id="dashCard" style="display:none;">
+      <div class="card-title">📊 Service Dashboard</div>
+      <p class="card-sub">Select a date and service to view or generate its report.</p>
+      <div class="row2">
+        <div><label>Date *</label><input type="date" id="date"></div>
+        <div><label>Service *</label><select id="service">
+          <option value="">Select</option>
+          <option value="1st Service">1st Service</option><option value="2nd Service">2nd Service</option>
+          <option value="3rd Service">3rd Service</option><option value="4th Service">4th Service</option>
+          <option value="Thursday Service">Thursday Service</option>
+        </select></div>
+      </div>
+      <button class="submit" id="viewBtn">View Dashboard</button>
+      <button class="secondary" id="reportBtn">Generate Draft Report (Doc)</button>
+      <div class="msg" id="dashMsg"></div>
+      <div id="reportLinkWrap"></div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw6wS0bAJmksZ_E2JCKOC59qRN-HNN74c_uY-MWwO7qfYj9v_HqqtJ1_4fwYvKtvDveSg/exec';
+  let token = '';
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  document.getElementById('unlockBtn').addEventListener('click', async () => {
+    const pw = document.getElementById('password').value;
+    const lockMsg = document.getElementById('lockMsg');
+    lockMsg.className = 'msg'; lockMsg.style.display = 'none';
+    const btn = document.getElementById('unlockBtn');
+    btn.disabled = true; btn.textContent = 'Checking…';
+
+    try {
+      const res = await fetch(`${API_URL}?action=checkPassword&token=${encodeURIComponent(pw)}`);
+      const result = await res.json();
+      if (!result.ok) {
+        lockMsg.className = 'msg err'; lockMsg.textContent = 'Incorrect password.'; lockMsg.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Unlock';
+        return;
+      }
+      token = pw;
+      document.getElementById('lockCard').style.display = 'none';
+      document.getElementById('dashCard').style.display = 'block';
+      document.getElementById('date').value = new Date().toISOString().slice(0,10);
+    } catch (err) {
+      lockMsg.className = 'msg err'; lockMsg.textContent = 'Could not reach the server.'; lockMsg.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Unlock';
+  });
+
+  function ratingBadgeClass(status) { return (!status || status === 'On Time') ? 'ontime' : 'off'; }
+
+  function renderDashboard(d) {
+    const results = document.getElementById('results');
+    let html = `
+      <div class="section-label">Attendance & Headcount</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-num">${d.attendance.total}</div><div class="stat-label">QC Staff Present</div></div>
+        <div class="stat"><div class="stat-num">${d.attendance.serving}</div><div class="stat-label">On Duty</div></div>
+        <div class="stat"><div class="stat-num">${d.headcount.grandTotal}</div><div class="stat-label">Total Worshippers</div></div>
+        <div class="stat"><div class="stat-num">${d.incidentCount}</div><div class="stat-label">Incidents Flagged</div></div>
+      </div>
+      <table><thead><tr><th>Department</th><th>Adults</th><th>Children</th><th>Total</th></tr></thead><tbody>
+        ${d.headcount.byDepartment.map(x => `<tr><td>${esc(x.department)}</td><td>${x.adults}</td><td>${x.children}</td><td>${x.total}</td></tr>`).join('')}
+      </tbody></table>
+
+      <div class="section-label">Post Report Ratings</div>
+      <table><tbody>
+        ${Object.keys(d.ratings).map(k => `<tr><td>${k}</td><td><span class="badge ontime">${esc(d.ratings[k])}</span></td></tr>`).join('')}
+      </tbody></table>
+    `;
+
+    if (d.timer) {
+      html += `
+        <div class="section-label">Timer — ${esc(d.timer.timerName || '')}</div>
+        <p style="font-size:13px;color:var(--muted);">${esc(d.timer.serviceStart || '—')} to ${esc(d.timer.serviceEnd || '—')}</p>
+        <table><tbody>
+          ${d.timer.segments.map(s => `<tr><td>${esc(s.label)}</td><td><span class="badge ${ratingBadgeClass(s.status)}">${esc(s.status)}${s.status!=='On Time'&&s.status!=='No data'?' ('+s.min+'m '+s.sec+'s)':''}</span></td></tr>`).join('')}
+        </tbody></table>
+        ${d.timer.generalObservation ? `<div class="note-block"><div class="note-title">Timer Notes</div>${esc(d.timer.generalObservation)}</div>` : ''}
+      `;
+    } else {
+      html += `<div class="section-label">Timer</div><p style="color:var(--muted);font-size:13px;">No timer log for this date/service.</p>`;
+    }
+
+    if (d.observer) {
+      html += `<div class="section-label">Observer — ${esc(d.observer.observerName || '')}</div>`;
+      if (d.observer.generalObservations) html += `<div class="note-block"><div class="note-title">General Observations</div>${esc(d.observer.generalObservations)}</div>`;
+      Object.keys(d.observer.unitReports || {}).forEach(u => {
+        html += `<div class="note-block"><div class="note-title">${esc(u)}</div>${esc(d.observer.unitReports[u])}</div>`;
+      });
+      if (d.observer.recommendations) html += `<div class="note-block"><div class="note-title">Recommendations</div>${esc(d.observer.recommendations)}</div>`;
+      if (d.observer.conclusion) html += `<div class="note-block"><div class="note-title">Conclusion</div>${esc(d.observer.conclusion)}</div>`;
+    } else {
+      html += `<div class="section-label">Observer</div><p style="color:var(--muted);font-size:13px;">No observer log for this date/service.</p>`;
+    }
+
+    results.innerHTML = html;
+  }
+
+  document.getElementById('viewBtn').addEventListener('click', async () => {
+    const date = document.getElementById('date').value;
+    const service = document.getElementById('service').value;
+    const msg = document.getElementById('dashMsg');
+    msg.className = 'msg'; msg.style.display = 'none';
+    document.getElementById('reportLinkWrap').innerHTML = '';
+    document.getElementById('results').innerHTML = '';
+
+    if (!date || !service) { msg.className = 'msg err'; msg.textContent = 'Please select a date and service.'; msg.style.display = 'block'; return; }
+
+    document.getElementById('results').innerHTML = '<div class="loading">Loading dashboard…</div>';
+    try {
+      const res = await fetch(`${API_URL}?action=getDashboard&token=${encodeURIComponent(token)}&date=${date}&service=${encodeURIComponent(service)}`);
+      const result = await res.json();
+      if (!result.ok) { document.getElementById('results').innerHTML = ''; msg.className = 'msg err'; msg.textContent = result.message; msg.style.display = 'block'; return; }
+      renderDashboard(result.data);
+    } catch (err) {
+      document.getElementById('results').innerHTML = '';
+      msg.className = 'msg err'; msg.textContent = 'Could not reach the server.'; msg.style.display = 'block';
+    }
+  });
+
+  document.getElementById('reportBtn').addEventListener('click', async () => {
+    const date = document.getElementById('date').value;
+    const service = document.getElementById('service').value;
+    const msg = document.getElementById('dashMsg');
+    msg.className = 'msg'; msg.style.display = 'none';
+    const wrap = document.getElementById('reportLinkWrap');
+    wrap.innerHTML = '';
+
+    if (!date || !service) { msg.className = 'msg err'; msg.textContent = 'Please select a date and service.'; msg.style.display = 'block'; return; }
+
+    const btn = document.getElementById('reportBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const res = await fetch(`${API_URL}?action=generateReport&token=${encodeURIComponent(token)}&date=${date}&service=${encodeURIComponent(service)}`);
+      const result = await res.json();
+      if (!result.ok) { msg.className = 'msg err'; msg.textContent = result.message; msg.style.display = 'block'; }
+      else {
+        wrap.innerHTML = `
+          <div class="msg ok" style="display:block;">Draft report ready.
+            <a href="${result.url}" target="_blank" style="color:#047857;font-weight:800;">Open it →</a>
+          </div>
+          <input class="link-box" readonly value="${result.url}" onclick="this.select(); document.execCommand('copy');" title="Click to copy">
+        `;
+      }
+    } catch (err) {
+      msg.className = 'msg err'; msg.textContent = 'Could not reach the server.'; msg.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Generate Draft Report (Doc)';
+  });
+</script>
+</body>
+</html>

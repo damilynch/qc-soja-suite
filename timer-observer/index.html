@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QC Timer & Observer — Streams of Joy International</title>
+<style>
+  :root {
+    --blue: #4F6EF7; --purple: #9B4FF7; --grad: linear-gradient(135deg, var(--blue), var(--purple));
+    --ink: #1E2233; --muted: #6B7280; --line: rgba(148, 130, 255, 0.22); --card: rgba(255, 255, 255, 0.72);
+    --success-bg: #D1FAE5; --success-text: #047857; --danger-bg: #FEE2E2; --danger-text: #B91C1C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: -apple-system, 'Inter', 'Segoe UI', sans-serif; color: var(--ink);
+    background: radial-gradient(circle at 15% 10%, rgba(79,110,247,0.14), transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(155,79,247,0.14), transparent 45%),
+      linear-gradient(160deg, #F6F5FF 0%, #FFFFFF 45%, #F3F0FF 100%);
+    padding: 40px 16px 80px;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; }
+  .backlink { display:inline-block; margin-bottom:14px; color:var(--muted); font-size:13px; text-decoration:none; font-weight:600; }
+  .hero { text-align: center; margin-bottom: 28px; }
+  .crest { width: 84px; height: 84px; border-radius: 22px; margin: 0 auto 18px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 30px rgba(120,90,255,0.25); }
+  .crest svg { width: 46px; height: 46px; }
+  h1 { font-size: 32px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.5px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
+  .brand { color: #A6A0C4; font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+  .chip-row { display: flex; justify-content: center; gap: 12px; margin: 22px 0 16px; flex-wrap: wrap; }
+  .chip { background: var(--card); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; font-size: 14px; font-weight: 600; }
+  .card { background: var(--card); backdrop-filter: blur(10px); border: 1.5px solid var(--line); border-radius: 20px; padding: 26px 24px 30px; box-shadow: 0 10px 40px rgba(120,90,255,0.10); }
+  .card-title { font-size: 19px; font-weight: 800; margin: 0 0 4px; }
+  .card-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 20px; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--purple); margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  label { display: block; font-size: 12.5px; font-weight: 700; color: #3A3F55; margin: 14px 0 6px; }
+  input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E4E1F5; background: #fff; font-size: 14.5px; color: var(--ink); font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(155,79,247,0.15); }
+  textarea { min-height: 56px; resize: vertical; }
+  .row2 { display: flex; gap: 14px; }
+  .row2 > div { flex: 1; }
+  .seg-card { border: 1.5px solid #ECE9FA; border-radius: 14px; padding: 14px 16px; margin-top: 12px; background: #fff; }
+  .seg-title { font-weight: 700; color: #3A3F55; font-size: 13.5px; margin-bottom: 8px; }
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { flex: 1; min-width: 70px; padding: 9px 0; text-align: center; border-radius: 10px; border: 1.5px solid #E4E1F5; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #4B4F66; background: #fff; }
+  .pill.active { background: var(--grad); border-color: transparent; color: #fff; }
+  .amount-row { display: none; gap: 10px; margin-top: 8px; }
+  .amount-row.show { display: flex; }
+  .amount-row div { flex: 1; }
+  .amount-row label { font-size: 11px; margin: 0 0 3px; }
+  .unit-pill { flex: 0 0 auto; padding: 9px 14px; }
+  button.submit { width: 100%; padding: 15px; margin-top: 24px; border: none; border-radius: 14px; background: var(--grad); color: #fff; font-size: 15.5px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(120,90,255,0.30); }
+  button.submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { margin-top: 16px; padding: 13px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; display: none; }
+  .msg.ok { display: block; background: var(--success-bg); color: var(--success-text); }
+  .msg.err { display: block; background: var(--danger-bg); color: var(--danger-text); }
+  .required { color: #DC2626; }
+  .loading { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="backlink" href="/">← All QC Tools</a>
+    <div class="hero">
+      <div class="crest"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="url(#g)"/><defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#4F6EF7"/><stop offset="1" stop-color="#9B4FF7"/></linearGradient></defs></svg></div>
+      <h1>Timer &amp; Observer</h1>
+      <p class="tagline">Program timing and roving unit observations, in one submission.</p>
+      <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
+    </div>
+    <div class="chip-row">
+      <div class="chip">📅 <span id="chipDate">—</span></div>
+      <div class="chip">🕐 <span id="chipTime">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✦ Submit Timer &amp; Observer Log</div>
+      <p class="card-sub">One entry per service, covering both roles.</p>
+      <div class="loading" id="loading">Loading form…</div>
+      <div id="content" style="display:none;"></div>
+    </div>
+  </div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbz0AeL3xA9Mtac6o2b4WQuL8WmMpRIno8pBQf34FWrel9u3Hnc5gl2E3Q3P_WSZNek4pQ/exec';
+
+  let ctx = null;
+  const segVals = {};
+  const extraVal = { status: '' };
+  let selectedUnits = [];
+  const unitTexts = {};
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function statusPills(field) {
+    return `<div class="pill-row" data-field="${field}">` +
+      ['On Time','Overshot','Finished Early'].map(o => `<div class="pill" data-val="${o}">${o}</div>`).join('') + `</div>`;
+  }
+
+  function render() {
+    document.getElementById('chipDate').textContent = ctx.date;
+    document.getElementById('chipTime').textContent = ctx.time;
+
+    const segHtml = ctx.segments.map(s => `
+      <div class="seg-card">
+        <div class="seg-title">${esc(s.label)}</div>
+        ${statusPills('seg.' + s.id)}
+        <div class="amount-row" id="amt_seg_${s.id}">
+          <div><label>Minutes</label><input type="number" min="0" id="min_seg_${s.id}" value="0"></div>
+          <div><label>Seconds</label><input type="number" min="0" max="59" id="sec_seg_${s.id}" value="0"></div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('content').innerHTML = `
+      <div class="section-label">Service Info</div>
+      <div class="row2"><div><label>Date *</label><input type="date" id="date" value="${esc(ctx.date)}"></div>
+      <div><label>Service *</label><select id="service"><option value="">Select</option>
+        <option value="1st Service">1st Service</option><option value="2nd Service">2nd Service</option>
+        <option value="3rd Service">3rd Service</option><option value="4th Service">4th Service</option>
+        <option value="Thursday Service">Thursday Service</option></select></div></div>
+      <label>Timer Name *</label><input type="text" id="name" placeholder="Your name">
+      <div class="row2"><div><label>Service Start</label><input type="time" id="serviceStart"></div>
+      <div><label>Service End</label><input type="time" id="serviceEnd"></div></div>
+
+      <div class="section-label">Program Segments</div>
+      ${segHtml}
+
+      <div class="seg-card">
+        <div class="seg-title">Extra Segment (optional)</div>
+        <label style="margin-top:0;">Segment Name</label><input type="text" id="extraName" placeholder="e.g. Special Guest Ministration">
+        ${statusPills('extra')}
+        <div class="amount-row" id="amt_extra">
+          <div><label>Minutes</label><input type="number" min="0" id="min_extra" value="0"></div>
+          <div><label>Seconds</label><input type="number" min="0" max="59" id="sec_extra" value="0"></div>
+        </div>
+      </div>
+
+      <label>Timer General Observation / Comment</label>
+      <textarea id="timerGeneralObservation" placeholder="Any closing comment on the timing of the service overall"></textarea>
+
+      <div class="section-label">Observer Report</div>
+      <label>Observer Name *</label><input type="text" id="observerName" placeholder="Observer's name">
+      <label>General Observations</label>
+      <textarea id="generalObservations" placeholder="Anything not tied to one specific unit"></textarea>
+      <label>Which units are you reporting on today?</label>
+      <div class="pill-row" id="unitPicker" style="flex-wrap:wrap;">
+        ${ctx.units.map(u => `<div class="pill unit-pill" data-unit="${esc(u)}">${esc(u)}</div>`).join('')}
+      </div>
+      <div id="unitWriteups"></div>
+      <label>Recommendations</label><textarea id="recommendations"></textarea>
+      <label>Conclusion / Commendations</label><textarea id="conclusion"></textarea>
+
+      <div class="msg" id="msg"></div>
+      <button class="submit" id="submitBtn">Submit Timer &amp; Observer Log</button>
+    `;
+
+    bindPills();
+    bindUnitPicker();
+    document.getElementById('submitBtn').addEventListener('click', submit);
+  }
+
+  function bindPills() {
+    document.querySelectorAll('.pill-row').forEach(row => {
+      row.addEventListener('click', e => {
+        const pill = e.target.closest('.pill');
+        if (!pill || !row.hasAttribute('data-field')) return;
+        row.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const field = row.getAttribute('data-field');
+        const val = pill.getAttribute('data-val');
+        const key = field.replace('.', '_');
+        const amtRow = document.getElementById('amt_' + key);
+        if (amtRow) amtRow.classList.toggle('show', val !== 'On Time');
+        if (field.startsWith('seg.')) {
+          const segId = field.slice(4);
+          segVals[segId] = segVals[segId] || {};
+          segVals[segId].status = val;
+        } else {
+          extraVal.status = val;
+        }
+      });
+    });
+  }
+
+  function bindUnitPicker() {
+    document.getElementById('unitPicker').addEventListener('click', e => {
+      const pill = e.target.closest('.pill');
+      if (!pill) return;
+      const unit = pill.getAttribute('data-unit');
+      pill.classList.toggle('active');
+      if (selectedUnits.includes(unit)) selectedUnits = selectedUnits.filter(u => u !== unit);
+      else selectedUnits.push(unit);
+      renderUnitWriteups();
+    });
+  }
+
+  function renderUnitWriteups() {
+    const wrap = document.getElementById('unitWriteups');
+    wrap.innerHTML = selectedUnits.map(u => `
+      <div class="seg-card"><div class="seg-title">${esc(u)}</div>
+        <textarea class="unit-text" data-unit="${esc(u)}" placeholder="Observation for ${esc(u)}">${esc(unitTexts[u] || '')}</textarea>
+      </div>`).join('');
+    wrap.querySelectorAll('.unit-text').forEach(ta => {
+      ta.addEventListener('input', () => { unitTexts[ta.getAttribute('data-unit')] = ta.value; });
+    });
+  }
+
+  async function submit() {
+    const msg = document.getElementById('msg');
+    msg.className = 'msg'; msg.style.display = 'none';
+
+    const date = document.getElementById('date').value;
+    const service = document.getElementById('service').value;
+    const name = document.getElementById('name').value;
+    const observerName = document.getElementById('observerName').value;
+
+    if (!service) { msg.className = 'msg err'; msg.textContent = 'Please select a service.'; msg.style.display = 'block'; return; }
+    if (!name.trim()) { msg.className = 'msg err'; msg.textContent = "Please enter the timer's name."; msg.style.display = 'block'; return; }
+    if (!observerName.trim()) { msg.className = 'msg err'; msg.textContent = "Please enter the observer's name."; msg.style.display = 'block'; return; }
+
+    const segments = {};
+    ctx.segments.forEach(s => {
+      const status = segVals[s.id] ? segVals[s.id].status : '';
+      const minEl = document.getElementById('min_seg_' + s.id);
+      const secEl = document.getElementById('sec_seg_' + s.id);
+      segments[s.id] = { status, min: status && status !== 'On Time' ? minEl.value : 0, sec: status && status !== 'On Time' ? secEl.value : 0 };
+    });
+
+    const extra = {
+      name: document.getElementById('extraName').value,
+      status: extraVal.status,
+      min: extraVal.status && extraVal.status !== 'On Time' ? document.getElementById('min_extra').value : 0,
+      sec: extraVal.status && extraVal.status !== 'On Time' ? document.getElementById('sec_extra').value : 0
+    };
+
+    const payload = {
+      date, service, name,
+      serviceStart: document.getElementById('serviceStart').value,
+      serviceEnd: document.getElementById('serviceEnd').value,
+      segments, extra,
+      timerGeneralObservation: document.getElementById('timerGeneralObservation').value,
+      observerName,
+      generalObservations: document.getElementById('generalObservations').value,
+      unitsReported: selectedUnits,
+      unitReports: unitTexts,
+      recommendations: document.getElementById('recommendations').value,
+      conclusion: document.getElementById('conclusion').value
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    try {
+      const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const result = await res.json();
+      msg.className = 'msg ' + (result.ok ? 'ok' : 'err');
+      msg.textContent = result.message;
+      msg.style.display = 'block';
+      if (result.ok) setTimeout(() => location.reload(), 1800);
+    } catch (err) {
+      msg.className = 'msg err';
+      msg.textContent = 'Could not reach the server. Check your connection and try again.';
+      msg.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Submit Timer & Observer Log';
+  }
+
+  async function init() {
+    try {
+      const res = await fetch(API_URL + '?action=getContext');
+      ctx = await res.json();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      render();
+    } catch (err) {
+      document.getElementById('loading').innerHTML = 'Could not load the form. Check the API_URL is set correctly.';
+    }
+  }
+  init();
+</script>
+</body>
+</html>
