@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QC Service Manager — Streams of Joy International</title>
+<title>QC Service Manager — Streams of Joy International, Abuja</title>
 <style>
   :root {
     --blue: #4F6EF7; --purple: #9B4FF7; --grad: linear-gradient(135deg, var(--blue), var(--purple));
@@ -104,8 +104,8 @@
   </div>
 
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbw1JBicmovEXzDKCRLim4_V-pKGr5Qr5GMwWrOY0mGs4AU5MpdBpLxFs5-56qQ6fcwc/exec';
-  let token = 'qcsoja1';
+  const API_URL = 'https://script.google.com/macros/s/AKfycby9y-TP-NfdLurUyqW9hXg5WaHIyl-bW4kJoAOoUpW-ObemJLjmRV0RVS1kwtPJCx9iFg/exec';
+  let token = '';
 
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -139,10 +139,8 @@
   function renderDashboard(d) {
     const results = document.getElementById('results');
     let html = `
-      <div class="section-label">Attendance & Headcount</div>
+      <div class="section-label">Worshipper Headcount</div>
       <div class="stat-grid">
-        <div class="stat"><div class="stat-num">${d.attendance.total}</div><div class="stat-label">QC Staff Present</div></div>
-        <div class="stat"><div class="stat-num">${d.attendance.serving}</div><div class="stat-label">On Duty</div></div>
         <div class="stat"><div class="stat-num">${d.headcount.grandTotal}</div><div class="stat-label">Total Worshippers</div></div>
         <div class="stat"><div class="stat-num">${d.incidentCount}</div><div class="stat-label">Incidents Flagged</div></div>
       </div>
