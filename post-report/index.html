@@ -239,7 +239,7 @@
   function onAreaChange() {
     const area = document.getElementById('area').value;
     const isArrows = area.startsWith('Mighty Arrows');
-    const isTeens = area === 'Teens Church';
+    const isTeens = area.startsWith('Teens');
 
     document.getElementById('arrowsPanel').innerHTML = isArrows ? `
       <div class="unit-card"><div class="unit-title">Mighty Arrows — ${esc(area)}</div>
@@ -252,7 +252,7 @@
       </div>` : '';
 
     document.getElementById('teensPanel').innerHTML = isTeens ? `
-      <div class="unit-card"><div class="unit-title">Teens Church</div>
+      <div class="unit-card"><div class="unit-title">${esc(area)}</div>
         <label>Lesson Topic *</label><textarea id="teensTopic"></textarea>
         <label>Teacher Preparedness</label>${pillGroup('teens.teacherPreparedness', ctx.ratings, '')}
         <label>Teen Engagement</label>${pillGroup('teens.engagement', ctx.ratings, '')}
@@ -318,5 +318,6 @@
   init();
 </script>
 <script src="/pwa.js" defer></script>
+<script src="/emergency-notify.js" defer></script>
 </body>
 </html>

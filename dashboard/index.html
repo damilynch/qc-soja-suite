@@ -145,7 +145,23 @@
 
   function renderDashboard(d) {
     const results = document.getElementById('results');
-    let html = `
+    let html = '';
+
+    if (d.emergencies && d.emergencies.length > 0) {
+      html += `
+        <div style="background:linear-gradient(135deg,#DC2626,#F97316); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:20px;">
+          <div style="font-weight:800; font-size:14px; margin-bottom:8px;">🚨 ${d.emergencies.length} Emergency Flag${d.emergencies.length > 1 ? 's' : ''} This Service</div>
+          ${d.emergencies.map(e => `
+            <div style="background:rgba(255,255,255,0.15); border-radius:10px; padding:10px 12px; margin-top:8px; font-size:13px; line-height:1.5;">
+              <strong>${esc(e.location)}</strong> — ${esc(e.description)}<br>
+              <span style="opacity:0.85;">Reported by ${esc(e.reportedBy)} · ${esc(e.submittedAt)} · Status: ${esc(e.status)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    html += `
       <div class="section-label">Worshipper Headcount</div>
       <div class="stat-grid">
         <div class="stat"><div class="stat-num">${d.headcount.grandTotal}</div><div class="stat-label">Total Worshippers</div></div>
@@ -242,5 +258,6 @@
   });
 </script>
 <script src="/pwa.js" defer></script>
+<script src="/emergency-notify.js" defer></script>
 </body>
 </html>

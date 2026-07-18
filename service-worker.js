@@ -6,12 +6,14 @@
  * always fetched live, never served from cache.
  */
 
-const CACHE_NAME = 'soj-qc-shell-v1';
+const CACHE_NAME = 'soj-qc-shell-v2';
 
 const APP_SHELL = [
   '/',
   '/post-report/',
-  '/timer-observer/',
+  '/timer/',
+  '/observer/',
+  '/emergency/',
   '/dashboard/',
   '/manifest.json',
   '/icons/icon-192.png',

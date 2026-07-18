@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QC Timer & Observer — Streams of Joy International</title>
+<title>QC Observer — Streams of Joy International</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4F6EF7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -41,23 +41,18 @@
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--purple); margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
   .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   label { display: block; font-size: 12.5px; font-weight: 700; color: #3A3F55; margin: 14px 0 6px; }
-  input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
+  input[type=text], input[type=date], select, textarea {
     width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E4E1F5; background: #fff; font-size: 14.5px; color: var(--ink); font-family: inherit;
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(155,79,247,0.15); }
-  textarea { min-height: 56px; resize: vertical; }
+  textarea { min-height: 60px; resize: vertical; }
   .row2 { display: flex; gap: 14px; }
   .row2 > div { flex: 1; }
   .seg-card { border: 1.5px solid #ECE9FA; border-radius: 14px; padding: 14px 16px; margin-top: 12px; background: #fff; }
   .seg-title { font-weight: 700; color: #3A3F55; font-size: 13.5px; margin-bottom: 8px; }
   .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .pill { flex: 1; min-width: 70px; padding: 9px 0; text-align: center; border-radius: 10px; border: 1.5px solid #E4E1F5; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #4B4F66; background: #fff; }
+  .pill { flex: 0 0 auto; padding: 9px 14px; text-align: center; border-radius: 10px; border: 1.5px solid #E4E1F5; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #4B4F66; background: #fff; }
   .pill.active { background: var(--grad); border-color: transparent; color: #fff; }
-  .amount-row { display: none; gap: 10px; margin-top: 8px; }
-  .amount-row.show { display: flex; }
-  .amount-row div { flex: 1; }
-  .amount-row label { font-size: 11px; margin: 0 0 3px; }
-  .unit-pill { flex: 0 0 auto; padding: 9px 14px; }
   button.submit { width: 100%; padding: 15px; margin-top: 24px; border: none; border-radius: 14px; background: var(--grad); color: #fff; font-size: 15.5px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(120,90,255,0.30); }
   button.submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .msg { margin-top: 16px; padding: 13px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; display: none; }
@@ -72,8 +67,8 @@
     <a class="backlink" href="/">← All QC Tools</a>
     <div class="hero">
       <div class="crest"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="url(#g)"/><defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#4F6EF7"/><stop offset="1" stop-color="#9B4FF7"/></linearGradient></defs></svg></div>
-      <h1>Timer &amp; Observer</h1>
-      <p class="tagline">Program timing and roving unit observations, in one submission.</p>
+      <h1>Observer</h1>
+      <p class="tagline">A roving report across service units, in your own words.</p>
       <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
     </div>
     <div class="chip-row">
@@ -81,42 +76,25 @@
       <div class="chip">🕐 <span id="chipTime">—</span></div>
     </div>
     <div class="card">
-      <div class="card-title">✦ Submit Timer &amp; Observer Log</div>
-      <p class="card-sub">One entry per service, covering both roles.</p>
+      <div class="card-title">✦ Submit Observer Report</div>
+      <p class="card-sub">Cover as many units as you observed this service, in one submission.</p>
       <div class="loading" id="loading">Loading form…</div>
       <div id="content" style="display:none;"></div>
     </div>
   </div>
 
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbz0AeL3xA9Mtac6o2b4WQuL8WmMpRIno8pBQf34FWrel9u3Hnc5gl2E3Q3P_WSZNek4pQ/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxML18eWnhaTihUfNTtPCCr0mtWWj5XG_Piy7qzl21yEDvoeE_-NJO7mK9ZKSVmxiiWYQ/exec';
 
   let ctx = null;
-  const segVals = {};
-  const extraVal = { status: '' };
   let selectedUnits = [];
   const unitTexts = {};
 
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  function statusPills(field) {
-    return `<div class="pill-row" data-field="${field}">` +
-      ['On Time','Overshot','Finished Early'].map(o => `<div class="pill" data-val="${o}">${o}</div>`).join('') + `</div>`;
-  }
-
   function render() {
     document.getElementById('chipDate').textContent = ctx.date;
     document.getElementById('chipTime').textContent = ctx.time;
-
-    const segHtml = ctx.segments.map(s => `
-      <div class="seg-card">
-        <div class="seg-title">${esc(s.label)}</div>
-        ${statusPills('seg.' + s.id)}
-        <div class="amount-row" id="amt_seg_${s.id}">
-          <div><label>Minutes</label><input type="number" min="0" id="min_seg_${s.id}" value="0"></div>
-          <div><label>Seconds</label><input type="number" min="0" max="59" id="sec_seg_${s.id}" value="0"></div>
-        </div>
-      </div>`).join('');
 
     document.getElementById('content').innerHTML = `
       <div class="section-label">Service Info</div>
@@ -125,68 +103,25 @@
         <option value="1st Service">1st Service</option><option value="2nd Service">2nd Service</option>
         <option value="3rd Service">3rd Service</option><option value="4th Service">4th Service</option>
         <option value="Thursday Service">Thursday Service</option></select></div></div>
-      <label>Timer Name *</label><input type="text" id="name" placeholder="Your name">
-      <div class="row2"><div><label>Service Start</label><input type="time" id="serviceStart"></div>
-      <div><label>Service End</label><input type="time" id="serviceEnd"></div></div>
+      <label>Observer Name *</label><input type="text" id="observerName" placeholder="Your name">
 
-      <div class="section-label">Program Segments</div>
-      ${segHtml}
-
-      <div class="seg-card">
-        <div class="seg-title">Extra Segment (optional)</div>
-        <label style="margin-top:0;">Segment Name</label><input type="text" id="extraName" placeholder="e.g. Special Guest Ministration">
-        ${statusPills('extra')}
-        <div class="amount-row" id="amt_extra">
-          <div><label>Minutes</label><input type="number" min="0" id="min_extra" value="0"></div>
-          <div><label>Seconds</label><input type="number" min="0" max="59" id="sec_extra" value="0"></div>
-        </div>
-      </div>
-
-      <label>Timer General Observation / Comment</label>
-      <textarea id="timerGeneralObservation" placeholder="Any closing comment on the timing of the service overall"></textarea>
-
-      <div class="section-label">Observer Report</div>
-      <label>Observer Name *</label><input type="text" id="observerName" placeholder="Observer's name">
+      <div class="section-label">Observation</div>
       <label>General Observations</label>
-      <textarea id="generalObservations" placeholder="Anything not tied to one specific unit"></textarea>
+      <textarea id="generalObservations" placeholder="Anything not tied to one specific unit — weather, parking, general atmosphere, etc."></textarea>
       <label>Which units are you reporting on today?</label>
-      <div class="pill-row" id="unitPicker" style="flex-wrap:wrap;">
-        ${ctx.units.map(u => `<div class="pill unit-pill" data-unit="${esc(u)}">${esc(u)}</div>`).join('')}
+      <div class="pill-row" id="unitPicker">
+        ${ctx.units.map(u => `<div class="pill" data-unit="${esc(u)}">${esc(u)}</div>`).join('')}
       </div>
       <div id="unitWriteups"></div>
       <label>Recommendations</label><textarea id="recommendations"></textarea>
       <label>Conclusion / Commendations</label><textarea id="conclusion"></textarea>
 
       <div class="msg" id="msg"></div>
-      <button class="submit" id="submitBtn">Submit Timer &amp; Observer Log</button>
+      <button class="submit" id="submitBtn">Submit Observer Report</button>
     `;
 
-    bindPills();
     bindUnitPicker();
     document.getElementById('submitBtn').addEventListener('click', submit);
-  }
-
-  function bindPills() {
-    document.querySelectorAll('.pill-row').forEach(row => {
-      row.addEventListener('click', e => {
-        const pill = e.target.closest('.pill');
-        if (!pill || !row.hasAttribute('data-field')) return;
-        row.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        const field = row.getAttribute('data-field');
-        const val = pill.getAttribute('data-val');
-        const key = field.replace('.', '_');
-        const amtRow = document.getElementById('amt_' + key);
-        if (amtRow) amtRow.classList.toggle('show', val !== 'On Time');
-        if (field.startsWith('seg.')) {
-          const segId = field.slice(4);
-          segVals[segId] = segVals[segId] || {};
-          segVals[segId].status = val;
-        } else {
-          extraVal.status = val;
-        }
-      });
-    });
   }
 
   function bindUnitPicker() {
@@ -218,35 +153,13 @@
 
     const date = document.getElementById('date').value;
     const service = document.getElementById('service').value;
-    const name = document.getElementById('name').value;
     const observerName = document.getElementById('observerName').value;
 
     if (!service) { msg.className = 'msg err'; msg.textContent = 'Please select a service.'; msg.style.display = 'block'; return; }
-    if (!name.trim()) { msg.className = 'msg err'; msg.textContent = "Please enter the timer's name."; msg.style.display = 'block'; return; }
-    if (!observerName.trim()) { msg.className = 'msg err'; msg.textContent = "Please enter the observer's name."; msg.style.display = 'block'; return; }
-
-    const segments = {};
-    ctx.segments.forEach(s => {
-      const status = segVals[s.id] ? segVals[s.id].status : '';
-      const minEl = document.getElementById('min_seg_' + s.id);
-      const secEl = document.getElementById('sec_seg_' + s.id);
-      segments[s.id] = { status, min: status && status !== 'On Time' ? minEl.value : 0, sec: status && status !== 'On Time' ? secEl.value : 0 };
-    });
-
-    const extra = {
-      name: document.getElementById('extraName').value,
-      status: extraVal.status,
-      min: extraVal.status && extraVal.status !== 'On Time' ? document.getElementById('min_extra').value : 0,
-      sec: extraVal.status && extraVal.status !== 'On Time' ? document.getElementById('sec_extra').value : 0
-    };
+    if (!observerName.trim()) { msg.className = 'msg err'; msg.textContent = "Please enter your name."; msg.style.display = 'block'; return; }
 
     const payload = {
-      date, service, name,
-      serviceStart: document.getElementById('serviceStart').value,
-      serviceEnd: document.getElementById('serviceEnd').value,
-      segments, extra,
-      timerGeneralObservation: document.getElementById('timerGeneralObservation').value,
-      observerName,
+      date, service, observerName,
       generalObservations: document.getElementById('generalObservations').value,
       unitsReported: selectedUnits,
       unitReports: unitTexts,
@@ -269,7 +182,7 @@
       msg.textContent = 'Could not reach the server. Check your connection and try again.';
       msg.style.display = 'block';
     }
-    btn.disabled = false; btn.textContent = 'Submit Timer & Observer Log';
+    btn.disabled = false; btn.textContent = 'Submit Observer Report';
   }
 
   async function init() {
@@ -286,5 +199,6 @@
   init();
 </script>
 <script src="/pwa.js" defer></script>
+<script src="/emergency-notify.js" defer></script>
 </body>
 </html>
