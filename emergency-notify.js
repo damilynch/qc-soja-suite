@@ -59,34 +59,92 @@
     });
   }
 
-  // ---------- In-page red banner (always shown, regardless of permission) ----------
-  function showInPageAlert(emergency) {
-    var style = document.getElementById('soj-emg-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'soj-emg-style';
-      style.textContent =
-        '.soj-emg-alert{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;max-width:480px;margin:0 auto;' +
-        'background:linear-gradient(135deg,#DC2626,#F97316);color:#fff;border-radius:16px;' +
-        'box-shadow:0 14px 36px rgba(220,38,38,0.4);padding:16px 18px;' +
-        'font-family:-apple-system,Inter,"Segoe UI",sans-serif;animation:soj-emg-in .3s ease;}' +
-        '@keyframes soj-emg-in{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}' +
-        '.soj-emg-alert .t{font-size:13.5px;font-weight:800;margin:0 0 4px;}' +
-        '.soj-emg-alert .b{font-size:13px;line-height:1.5;margin:0 0 10px;opacity:0.95;}' +
-        '.soj-emg-alert button{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:9px;' +
-        'font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;}' +
-        '@media (min-width:640px){.soj-emg-alert{left:auto;right:24px;width:380px;}}';
-      document.head.appendChild(style);
+  // ---------- In-page red banner: single carousel, not a stack ----------
+  var emergencyQueue = [];
+  var currentIdx = 0;
+  var autoAdvanceTimer = null;
+
+  function ensureStyles() {
+    if (document.getElementById('soj-emg-style')) return;
+    var style = document.createElement('style');
+    style.id = 'soj-emg-style';
+    style.textContent =
+      '#soj-emg-alert-container{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;max-width:480px;margin:0 auto;' +
+      'background:linear-gradient(135deg,#DC2626,#F97316);color:#fff;border-radius:16px;' +
+      'box-shadow:0 14px 36px rgba(220,38,38,0.4);padding:16px 18px;overflow:hidden;' +
+      'font-family:-apple-system,Inter,"Segoe UI",sans-serif;}' +
+      '.soj-emg-inner{animation:soj-emg-slide .35s ease;}' +
+      '@keyframes soj-emg-slide{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}' +
+      '#soj-emg-alert-container .pager{font-size:11px;font-weight:800;letter-spacing:0.5px;opacity:0.85;margin:0 0 6px;}' +
+      '#soj-emg-alert-container .t{font-size:13.5px;font-weight:800;margin:0 0 4px;}' +
+      '#soj-emg-alert-container .b{font-size:13px;line-height:1.5;margin:0 0 12px;opacity:0.95;}' +
+      '#soj-emg-alert-container .actions{display:flex;gap:8px;}' +
+      '#soj-emg-alert-container button{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:9px;' +
+      'font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;}' +
+      '#soj-emg-alert-container button.next{background:rgba(255,255,255,0.9);color:#B91C1C;}' +
+      '@media (min-width:640px){#soj-emg-alert-container{left:auto;right:24px;width:380px;}}';
+    document.head.appendChild(style);
+  }
+
+  function renderCurrent() {
+    var container = document.getElementById('soj-emg-alert-container');
+
+    if (emergencyQueue.length === 0) {
+      if (container) container.remove();
+      clearInterval(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+      return;
     }
 
-    var el = document.createElement('div');
-    el.className = 'soj-emg-alert';
-    el.innerHTML =
-      '<p class="t">🚨 EMERGENCY — ' + esc(emergency.location) + '</p>' +
-      '<p class="b">' + esc(emergency.description) + '<br><span style="opacity:0.8;">Reported by ' + esc(emergency.reportedBy) + '</span></p>' +
-      '<button>Dismiss</button>';
-    document.body.appendChild(el);
-    el.querySelector('button').addEventListener('click', function () { el.remove(); });
+    ensureStyles();
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'soj-emg-alert-container';
+      document.body.appendChild(container);
+    }
+    if (currentIdx >= emergencyQueue.length) currentIdx = 0;
+    var em = emergencyQueue[currentIdx];
+    var total = emergencyQueue.length;
+
+    container.innerHTML =
+      '<div class="soj-emg-inner">' +
+      (total > 1 ? '<p class="pager">🚨 ALERT ' + (currentIdx + 1) + ' OF ' + total + '</p>' : '') +
+      '<p class="t">EMERGENCY — ' + esc(em.location) + '</p>' +
+      '<p class="b">' + esc(em.description) + '<br><span style="opacity:0.8;">Reported by ' + esc(em.reportedBy) + '</span></p>' +
+      '<div class="actions">' +
+      (total > 1 ? '<button class="next">Next →</button>' : '') +
+      '<button class="dismiss">Dismiss</button>' +
+      '</div></div>';
+
+    var nextBtn = container.querySelector('.next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        currentIdx = (currentIdx + 1) % emergencyQueue.length;
+        renderCurrent();
+        startAutoAdvance(); // reset the timer so it doesn't jump right after a manual click
+      });
+    }
+    container.querySelector('.dismiss').addEventListener('click', function () {
+      emergencyQueue.splice(currentIdx, 1);
+      if (currentIdx >= emergencyQueue.length) currentIdx = 0;
+      renderCurrent();
+    });
+  }
+
+  function startAutoAdvance() {
+    clearInterval(autoAdvanceTimer);
+    if (emergencyQueue.length <= 1) return;
+    autoAdvanceTimer = setInterval(function () {
+      currentIdx = (currentIdx + 1) % emergencyQueue.length;
+      renderCurrent();
+    }, 6000);
+  }
+
+  function addEmergencies(list) {
+    if (!list || !list.length) return;
+    list.forEach(function (em) { emergencyQueue.push(em); });
+    renderCurrent();
+    startAutoAdvance();
   }
 
   // ---------- OS-level notification, if permission granted ----------
@@ -117,10 +175,8 @@
       .then(function (result) {
         if (!result || !result.ok) return;
         if (result.emergencies && result.emergencies.length) {
-          result.emergencies.forEach(function (em) {
-            showInPageAlert(em);
-            showOsNotification(em);
-          });
+          result.emergencies.forEach(function (em) { showOsNotification(em); });
+          addEmergencies(result.emergencies);
         }
         localStorage.setItem(SINCE_KEY, String(result.serverNow || Date.now()));
       })
