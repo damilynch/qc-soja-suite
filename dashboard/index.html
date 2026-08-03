@@ -76,7 +76,7 @@
       <div class="crest"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="url(#g)"/><defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#4F6EF7"/><stop offset="1" stop-color="#9B4FF7"/></linearGradient></defs></svg></div>
       <h1>Service Manager</h1>
       <p class="tagline">Compiled dashboard and draft report, for QC leadership only.</p>
-      <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
+      <div class="brand">STREAMS OF JOY INTERNATIONAL, ABUJA</div>
     </div>
 
     <div class="card" id="lockCard">
@@ -103,6 +103,7 @@
         </select></div>
       </div>
       <button class="submit" id="viewBtn">View Dashboard</button>
+      <button class="secondary" id="headcountBtn">Generate Headcount Only</button>
       <button class="secondary" id="reportBtn">Generate Draft Report (Doc)</button>
       <div class="msg" id="dashMsg"></div>
       <div id="reportLinkWrap"></div>
@@ -173,6 +174,7 @@
 
       <div class="section-label">Post Report Ratings</div>
       <table><tbody>
+        <tr><td><strong>Overall Rating for the Service</strong></td><td><span class="badge ontime"><strong>${esc(d.dayOverallRating || 'No data')}</strong></span></td></tr>
         ${Object.keys(d.ratings).map(k => `<tr><td>${k}</td><td><span class="badge ontime">${esc(d.ratings[k])}</span></td></tr>`).join('')}
       </tbody></table>
     `;
@@ -191,13 +193,36 @@
     }
 
     if (d.observer) {
-      html += `<div class="section-label">Observer — ${esc(d.observer.observerName || '')}</div>`;
-      if (d.observer.generalObservations) html += `<div class="note-block"><div class="note-title">General Observations</div>${esc(d.observer.generalObservations)}</div>`;
+      const obsNames = (d.observer.observerNames || []).join(', ');
+      html += `<div class="section-label">Observer(s) — ${esc(obsNames)}</div>`;
+
+      if (d.observer.generalObservations && d.observer.generalObservations.length) {
+        html += `<div class="note-block"><div class="note-title">General Observations</div>` +
+          d.observer.generalObservations.map(item => `<p style="margin:4px 0;"><strong>${esc(item.name)}:</strong> ${esc(item.text)}</p>`).join('') +
+          `</div>`;
+      }
+
       Object.keys(d.observer.unitReports || {}).forEach(u => {
-        html += `<div class="note-block"><div class="note-title">${esc(u)}</div>${esc(d.observer.unitReports[u])}</div>`;
+        const entries = d.observer.unitReports[u];
+        html += `<div class="note-block"><div class="note-title">${esc(u)}${entries.length > 1 ? ' (' + entries.length + ' observers)' : ''}</div>` +
+          entries.map(item => entries.length > 1
+            ? `<p style="margin:4px 0;"><strong>${esc(item.name)}:</strong> ${esc(item.text)}</p>`
+            : esc(item.text)
+          ).join('') +
+          `</div>`;
       });
-      if (d.observer.recommendations) html += `<div class="note-block"><div class="note-title">Recommendations</div>${esc(d.observer.recommendations)}</div>`;
-      if (d.observer.conclusion) html += `<div class="note-block"><div class="note-title">Conclusion</div>${esc(d.observer.conclusion)}</div>`;
+
+      if (d.observer.recommendations && d.observer.recommendations.length) {
+        html += `<div class="note-block"><div class="note-title">Recommendations</div>` +
+          d.observer.recommendations.map(item => `<p style="margin:4px 0;"><strong>${esc(item.name)}:</strong> ${esc(item.text)}</p>`).join('') +
+          `</div>`;
+      }
+
+      if (d.observer.conclusion && d.observer.conclusion.length) {
+        html += `<div class="note-block"><div class="note-title">Conclusion</div>` +
+          d.observer.conclusion.map(item => `<p style="margin:4px 0;"><strong>${esc(item.name)}:</strong> ${esc(item.text)}</p>`).join('') +
+          `</div>`;
+      }
     } else {
       html += `<div class="section-label">Observer</div><p style="color:var(--muted);font-size:13px;">No observer log for this date/service.</p>`;
     }
@@ -225,6 +250,56 @@
       document.getElementById('results').innerHTML = '';
       msg.className = 'msg err'; msg.textContent = 'Could not reach the server.'; msg.style.display = 'block';
     }
+  });
+
+  document.getElementById('headcountBtn').addEventListener('click', async () => {
+    const date = document.getElementById('date').value;
+    const service = document.getElementById('service').value;
+    const msg = document.getElementById('dashMsg');
+    msg.className = 'msg'; msg.style.display = 'none';
+    const wrap = document.getElementById('reportLinkWrap');
+    wrap.innerHTML = '';
+    document.getElementById('results').innerHTML = '';
+
+    if (!date || !service) { msg.className = 'msg err'; msg.textContent = 'Please select a date and service.'; msg.style.display = 'block'; return; }
+
+    const btn = document.getElementById('headcountBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const res = await fetch(`${API_URL}?action=generateHeadcount&token=${encodeURIComponent(token)}&date=${date}&service=${encodeURIComponent(service)}`);
+      const result = await res.json();
+      if (!result.ok) { msg.className = 'msg err'; msg.textContent = result.message; msg.style.display = 'block'; }
+      else {
+        const b = result.data;
+        const rowLine = (label, d) => `<div style="font-family:monospace;font-size:13px;padding:3px 0;">${esc(label)}<br>Adult = <strong>${d.adults}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Children = <strong>${d.children}</strong></div>`;
+        const inlineLine = (label, d) => `<div style="font-family:monospace;font-size:13px;padding:3px 0;">${esc(label)} - Adult = <strong>${d.adults}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Children = <strong>${d.children}</strong></div>`;
+
+        document.getElementById('results').innerHTML = `
+          <div class="section-label">Main Church</div>
+          ${b.mainChurch.map(r => rowLine(r.label, r.data)).join('')}
+          <div class="section-label">Overflow</div>
+          ${b.overflow.map(r => inlineLine(r.label, r.data)).join('')}
+          <div class="section-label">Children's Church (Mighty Arrows &amp; Teens)</div>
+          <div style="font-family:monospace;font-size:13px;padding:3px 0;">Adult = <strong>${b.childrenChurch.adults}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Children = <strong>${b.childrenChurch.children}</strong></div>
+          <div class="section-label">Outside</div>
+          ${b.outside.map(r => inlineLine(r.label, r.data)).join('')}
+          ${(b.other.adults || b.other.children) ? `<div class="section-label">Other</div>` + inlineLine('Uncategorized', b.other) : ''}
+          <div style="margin-top:16px; padding:12px 14px; background:#F3F0FF; border-radius:10px; font-family:monospace; font-size:13.5px;">
+            <strong>Subtotal</strong> — Adult: ${b.subtotalAdults} | Children: ${b.subtotalChildren}<br>
+            <strong style="color:#B91C1C;">Grand Total = ${b.grandTotal}</strong>
+          </div>
+        `;
+        wrap.innerHTML = `
+          <div class="msg ok" style="display:block;">Quick headcount doc ready.
+            <a href="${result.url}" target="_blank" style="color:#047857;font-weight:800;">Open it →</a>
+          </div>
+          <input class="link-box" readonly value="${result.url}" onclick="this.select(); document.execCommand('copy');" title="Click to copy">
+        `;
+      }
+    } catch (err) {
+      msg.className = 'msg err'; msg.textContent = 'Could not reach the server.'; msg.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Generate Headcount Only';
   });
 
   document.getElementById('reportBtn').addEventListener('click', async () => {

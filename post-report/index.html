@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QC Post Report — Streams of Joy International</title>
+<title>QC Post Report — Streams of Joy International, Abuja</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4F6EF7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -84,6 +84,14 @@
   textarea { min-height: 64px; resize: vertical; }
 
   .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-top: 8px; }
+  @media (max-width: 420px) { .rate-grid { grid-template-columns: 1fr; } }
+  .rate-row { display: flex; flex-direction: column; }
+  .rate-label { font-size: 11.5px; font-weight: 700; color: #3A3F55; margin: 0 0 4px; }
+  .rate-select { padding: 9px 10px; border-radius: 10px; border: 1.5px solid #E4E1F5; background: #fff; font-size: 13.5px; color: var(--ink); font-family: inherit; }
+  .rate-select:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(155,79,247,0.15); }
+  .computed-box { margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: #F3F0FF; border: 1px solid var(--line); font-size: 13px; color: var(--navy-2, #17324F); }
+  .computed-box strong { color: var(--purple); }
   .pill {
     flex: 1; min-width: 72px; padding: 10px 0; text-align: center; border-radius: 12px;
     border: 1.5px solid #E4E1F5; cursor: pointer; font-size: 13px; font-weight: 600; color: #4B4F66; background: #fff;
@@ -120,7 +128,7 @@
       </div>
       <h1>QC Post Report</h1>
       <p class="tagline">Headcount and observation reporting for every post, every service.</p>
-      <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
+      <div class="brand">STREAMS OF JOY INTERNATIONAL, ABUJA</div>
     </div>
 
     <div class="chip-row">
@@ -144,6 +152,8 @@
 
   let ctx = null;
   const vals = { ma: { safetyFlag: 'No' }, teens: {}, incidentFlag: 'No' };
+  const RATING_SCORE = { 'Excellent': 4, 'Good': 3, 'Fair': 2, 'Poor': 1 };
+  const SCORE_LABEL = { 4: 'Excellent', 3: 'Good', 2: 'Fair', 1: 'Poor' };
 
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -151,6 +161,25 @@
     return `<div class="pill-row" data-field="${id}">` +
       options.map(o => `<div class="pill${current===o?' active':''}" data-val="${esc(o)}">${esc(o)}</div>`).join('') +
       `</div>`;
+  }
+
+  function dropdownGroup(id, label, options) {
+    return `<div class="rate-row"><label class="rate-label">${label} *</label>` +
+      `<select class="rate-select" data-field="${id}"><option value="">Select</option>` +
+      options.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('') +
+      `</select></div>`;
+  }
+
+  function updateComputedOverall() {
+    const fields = ['preparedness','neatness','orderliness','conduct','compliance','coordination'];
+    const scores = fields.map(f => RATING_SCORE[vals[f]]).filter(Boolean);
+    const el = document.getElementById('computedOverall');
+    if (!el) return;
+    if (scores.length === 0) { el.textContent = '—'; return; }
+    const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
+    let rounded = Math.round(avg);
+    if (rounded < 1) rounded = 1; if (rounded > 4) rounded = 4;
+    el.textContent = SCORE_LABEL[rounded] + ` (from ${scores.length}/6 rated)`;
   }
 
   function render() {
@@ -178,13 +207,15 @@
       <input type="number" min="0" id="childrenHeadcount" value="0">
 
       <div class="section-label">Observation</div>
-      <label>Area properly prepared before service? *</label>${pillGroup('preparedness', ctx.ratings, '')}
-      <label>Neatness and Appearance *</label>${pillGroup('neatness', ctx.ratings, '')}
-      <label>Orderliness During Service *</label>${pillGroup('orderliness', ctx.ratings, '')}
-      <label>Workers' Conduct and Professionalism *</label>${pillGroup('conduct', ctx.ratings, '')}
-      <label>Compliance with Church Guidelines *</label>${pillGroup('compliance', ctx.ratings, '')}
-      <label>Overall Coordination *</label>${pillGroup('coordination', ctx.ratings, '')}
-      <label>Overall Rating *</label>${pillGroup('overallRating', ctx.overallRatings, '')}
+      <div class="rate-grid">
+        ${dropdownGroup('preparedness', 'Prepared before service?', ctx.ratings)}
+        ${dropdownGroup('neatness', 'Neatness & Appearance', ctx.ratings)}
+        ${dropdownGroup('orderliness', 'Orderliness', ctx.ratings)}
+        ${dropdownGroup('conduct', "Workers' Conduct", ctx.ratings)}
+        ${dropdownGroup('compliance', 'Compliance', ctx.ratings)}
+        ${dropdownGroup('coordination', 'Coordination', ctx.ratings)}
+      </div>
+      <div class="computed-box">Overall Rating (auto-calculated): <strong id="computedOverall">—</strong></div>
 
       <div class="section-label">Comments</div>
       <label>What went well?</label><textarea id="whatWentWell"></textarea>
@@ -205,8 +236,18 @@
     `;
 
     bindPills();
+    bindRateDropdowns();
     document.getElementById('area').addEventListener('change', onAreaChange);
     document.getElementById('submitBtn').addEventListener('click', submit);
+  }
+
+  function bindRateDropdowns() {
+    document.querySelectorAll('.rate-select').forEach(sel => {
+      sel.addEventListener('change', e => {
+        setVal(e.target.getAttribute('data-field'), e.target.value);
+        updateComputedOverall();
+      });
+    });
   }
 
   function bindPills() {
@@ -274,7 +315,7 @@
       adultsHeadcount: document.getElementById('adultsHeadcount').value,
       childrenHeadcount: document.getElementById('childrenHeadcount').value,
       preparedness: vals.preparedness, neatness: vals.neatness, orderliness: vals.orderliness,
-      conduct: vals.conduct, compliance: vals.compliance, coordination: vals.coordination, overallRating: vals.overallRating,
+      conduct: vals.conduct, compliance: vals.compliance, coordination: vals.coordination,
       whatWentWell: document.getElementById('whatWentWell').value,
       areasForImprovement: document.getElementById('areasForImprovement').value,
       recommendations: document.getElementById('recommendations').value,
