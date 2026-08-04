@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QC Post Report — Streams of Joy International, Abuja</title>
+<title>QC Post Report — Streams of Joy International</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4F6EF7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -128,7 +128,7 @@
       </div>
       <h1>QC Post Report</h1>
       <p class="tagline">Headcount and observation reporting for every post, every service.</p>
-      <div class="brand">STREAMS OF JOY INTERNATIONAL, ABUJA</div>
+      <div class="brand">STREAMS OF JOY INTERNATIONAL</div>
     </div>
 
     <div class="chip-row">
@@ -154,6 +154,15 @@
   const vals = { ma: { safetyFlag: 'No' }, teens: {}, incidentFlag: 'No' };
   const RATING_SCORE = { 'Excellent': 4, 'Good': 3, 'Fair': 2, 'Poor': 1 };
   const SCORE_LABEL = { 4: 'Excellent', 3: 'Good', 2: 'Fair', 1: 'Poor' };
+  const RATE_CATEGORIES = [
+    { id: 'preparedness', label: 'Prepared before service?' },
+    { id: 'neatness', label: 'Neatness & Appearance' },
+    { id: 'orderliness', label: 'Orderliness' },
+    { id: 'conduct', label: "Workers' Conduct" },
+    { id: 'compliance', label: 'Compliance' },
+    { id: 'coordination', label: 'Coordination' }
+  ];
+  let selectedRateCats = [];
 
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -170,16 +179,43 @@
       `</select></div>`;
   }
 
+  function bindRatePicker() {
+    document.getElementById('ratePicker').addEventListener('click', e => {
+      const pill = e.target.closest('.rate-pill');
+      if (!pill) return;
+      const cat = pill.getAttribute('data-cat');
+      pill.classList.toggle('active');
+      if (selectedRateCats.includes(cat)) {
+        selectedRateCats = selectedRateCats.filter(c => c !== cat);
+        delete vals[cat];
+      } else {
+        selectedRateCats.push(cat);
+      }
+      renderRateFields();
+      updateComputedOverall();
+    });
+  }
+
+  function renderRateFields() {
+    const wrap = document.getElementById('rateFields');
+    wrap.innerHTML = `<div class="rate-grid">` +
+      selectedRateCats.map(catId => {
+        const cat = RATE_CATEGORIES.find(c => c.id === catId);
+        return dropdownGroup(cat.id, cat.label, ctx.ratings);
+      }).join('') +
+    `</div>`;
+    bindRateDropdowns();
+  }
+
   function updateComputedOverall() {
-    const fields = ['preparedness','neatness','orderliness','conduct','compliance','coordination'];
-    const scores = fields.map(f => RATING_SCORE[vals[f]]).filter(Boolean);
+    const scores = selectedRateCats.map(f => RATING_SCORE[vals[f]]).filter(Boolean);
     const el = document.getElementById('computedOverall');
     if (!el) return;
     if (scores.length === 0) { el.textContent = '—'; return; }
     const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
     let rounded = Math.round(avg);
     if (rounded < 1) rounded = 1; if (rounded > 4) rounded = 4;
-    el.textContent = SCORE_LABEL[rounded] + ` (from ${scores.length}/6 rated)`;
+    el.textContent = SCORE_LABEL[rounded] + ` (from ${scores.length}/${selectedRateCats.length} rated)`;
   }
 
   function render() {
@@ -207,14 +243,11 @@
       <input type="number" min="0" id="childrenHeadcount" value="0">
 
       <div class="section-label">Observation</div>
-      <div class="rate-grid">
-        ${dropdownGroup('preparedness', 'Prepared before service?', ctx.ratings)}
-        ${dropdownGroup('neatness', 'Neatness & Appearance', ctx.ratings)}
-        ${dropdownGroup('orderliness', 'Orderliness', ctx.ratings)}
-        ${dropdownGroup('conduct', "Workers' Conduct", ctx.ratings)}
-        ${dropdownGroup('compliance', 'Compliance', ctx.ratings)}
-        ${dropdownGroup('coordination', 'Coordination', ctx.ratings)}
+      <label>Which aspects would you like to rate? *</label>
+      <div class="pill-row" id="ratePicker">
+        ${RATE_CATEGORIES.map(c => `<div class="pill rate-pill" data-cat="${c.id}">${c.label}</div>`).join('')}
       </div>
+      <div id="rateFields"></div>
       <div class="computed-box">Overall Rating (auto-calculated): <strong id="computedOverall">—</strong></div>
 
       <div class="section-label">Comments</div>
@@ -236,7 +269,7 @@
     `;
 
     bindPills();
-    bindRateDropdowns();
+    bindRatePicker();
     document.getElementById('area').addEventListener('change', onAreaChange);
     document.getElementById('submitBtn').addEventListener('click', submit);
   }
@@ -306,6 +339,15 @@
   async function submit() {
     const msg = document.getElementById('msg');
     msg.className = 'msg'; msg.style.display = 'none';
+
+    if (selectedRateCats.length === 0) {
+      msg.className = 'msg err'; msg.textContent = 'Please select at least one aspect to rate.'; msg.style.display = 'block'; return;
+    }
+    const unrated = selectedRateCats.filter(c => !vals[c]);
+    if (unrated.length > 0) {
+      const labels = unrated.map(c => RATE_CATEGORIES.find(x => x.id === c).label).join(', ');
+      msg.className = 'msg err'; msg.textContent = 'Please pick a rating for: ' + labels; msg.style.display = 'block'; return;
+    }
 
     const payload = {
       date: document.getElementById('date').value,
